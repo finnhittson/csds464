@@ -31,10 +31,10 @@ def plot_sampled_function(g, fs:int=1, tlim:tuple=None, tscale:float=1.0, tunits
 # 2. Signals
 ## 2a. Delta and step functions
 def d(t, fs:int=1):
-    return [1 if round(i, 3) == 0 else 0 for i in t]
+    return np.array([1 if round(i, 3) == 0 else 0 for i in t])
     
 def u(t):
-    return [1 if i >= 0 else 0 for i in t]
+    return np.array([1 if i >= 0 else 0 for i in t])
 
 def plot_delta_step(t, fs, g, plot_type:str="line"):
     t = np.arange(-t, t+1, 1/fs)
@@ -53,7 +53,23 @@ def plot_delta_step(t, fs, g, plot_type:str="line"):
     plt.show()
 
 ## 2b. gensignal
+def gensignal(t, g, fs:int=1, tau:float=1.0, T:float=1.0, **kwargs):
+    if g == d:
+        t = np.arange(t, t+T-tau+1, 1/fs)
+        y = g(t, **kwargs)
+        return t + np.ones(len(t))*tau, y
+    t = np.arange(t+tau, T+tau, (T-t)/fs)
+    y = g(t, **kwargs)
+    return t, y
 
+def plot_stem(t, y, title):
+    for i in range(len(y)):
+        plt.plot([t[i], t[i]], [0, y[i]], '#1f77b4')
+        plt.scatter(t[i], y[i], c='#1f77b4', s=15)
+    plt.xlabel("time $t$, (sec)", fontsize=16)
+    plt.ylabel("amplitude", fontsize=16)
+    plt.title(title, fontsize=18)
+    plt.show()
 
 # 3. Noise and SNR
 ## 3a. energy, power, and snr
@@ -61,7 +77,27 @@ def energy(x):
     return np.linalg.norm(x)**2
 
 def power(x):
-    return np.linalg.norm(x)**2/len(x)
+    return energy(x)/len(x)
 
 def snr(Ps, Pn):
     return Ps/Pn
+
+# 3b. Noisy signals
+def noisysignal(t, g, fs, tau, T, s, **kwargs):
+    t, signal = gensignal(t=t, g=g, fs=fs, tau=tau, T=T, **kwargs)
+    noise = np.random.normal(loc=0, scale=s, size=len(signal))
+    return t, signal, noise
+
+def plot_noisysignal(t, y, title):
+    plt.plot(t, y, linewidth=0.5)
+    plt.xlabel("time $t$, (sec)", fontsize=16)
+    plt.ylabel("amplitude", fontsize=16)
+    plt.title(title, fontsize=16)
+    plt.show()
+
+# 3c. Noise level specified by SNR
+def snr2sigma(x, xrange:int=None, snr:int=10):
+    if xrange:
+        x = x[:xrange]
+    Px = power(x)
+    return math.sqrt(Px/pow(10, snr/10))
