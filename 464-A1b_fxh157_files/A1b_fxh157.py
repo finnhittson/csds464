@@ -92,13 +92,17 @@ def plot_sinewave(
 #   d: gabor/cos delay
 #   sigma: Gaussian width
 def gabore(t, f: float=1.0, a: float=1.0, d: float=0.0, sigma: float=1.0) -> float:
-	return a*math.exp(-t**2/(2*sigma**2)) * math.cos(2*math.pi*f*(t + d))
+	if isinstance(t, int) or isinstance(t, float):
+		return a*math.exp(-t**2/(2*sigma**2)) * math.cos(2*math.pi*f*(t + d))
+	return [a*math.exp(-i**2/(2*sigma**2)) * math.cos(2*math.pi*f*(i + d)) for i in t]
 
 
 # odd gabor function
 # 	...
 def gaboro(t, f: float=1.0, a: float=1.0, d: float=math.pi/2, sigma: float=1.0) -> float:
-	return a*math.exp(-t**2/(2*sigma**2)) * math.cos(2*math.pi*f*t + d)
+	if isinstance(t, int) or isinstance(t, float):
+		return a*math.exp(-t**2/(2*sigma**2)) * math.cos(2*math.pi*f*(t + d))
+	return [a*math.exp(-i**2/(2*sigma**2)) * math.cos(2*math.pi*f*(i + d)) for i in t]
 
 
 # computes the normalization constant of the even gabor function over a range of time
