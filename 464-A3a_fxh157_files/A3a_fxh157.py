@@ -101,3 +101,24 @@ def snr2sigma(x, xrange:int=None, snr:int=10):
         x = x[:xrange]
     Px = power(x)
     return math.sqrt(Px/pow(10, snr/10))
+
+# 3d. Estimating SNR
+def extent(y, th:float=0.01):
+    first = last = -1
+    for i in range(len(y)):
+        if abs(y[i]) > th and first == -1:
+            first = last = i
+        elif abs(y[i]) > th:
+            last = i
+    return first, last
+
+def extend(t, y, n, fs, T, size, s):
+    noise_before = np.random.normal(loc=0, scale=s, size=size)
+    noise_after = np.random.normal(loc=0, scale=s, size=size)
+    noise = np.concatenate((noise_before, n, noise_after))
+
+    zeros = np.zeros(size)
+    signal = np.concatenate((zeros, y, zeros))
+    time = np.linspace(0, T + 2*T*size/len(y), len(signal))
+
+    return time, signal, noise
