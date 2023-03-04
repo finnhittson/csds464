@@ -1,6 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+import sys
+sys.path.append('../464-A3a_fxh157_files/')
+import A3a_fxh157 as a3a
+
 # 1. Filtering
 ## 1b. Implementation
 def movingavg(x, l:float=0.5):
@@ -52,3 +56,30 @@ def filterIIR(x, a:list=None, b:list=None):
             if n-k-1 >= 0:
                 y[-1] -= a[k] * y[n-k-1]
     return y
+
+def plot_filter_grid(
+	g, a:list=None, b:list=None,
+	rows:int=4, cols:int=4, fs:int=2000, 
+	tau:float=0, T:float=0.1, tscale:float=1.0, 
+	s:list=None, f:list=None
+	):
+    if cols != len(s) or rows != len(f):
+        print("nope!")
+        return
+    #t=0, g=a1b.sinewave, fs=2000, tau=0, T=0.1, s=0.1, tscale=1, f=100
+    fig, axs = plt.subplots(rows, cols)
+    for row in range(rows):
+        for col in range(cols):
+            t, x, n = a3a.noisysignal(t=0, g=g, fs=fs, tau=tau, T=T, s=s[col], tscale=tscale, f=f[row])
+            filtered = filterIIR(x=x+n, a=a, b=b)
+            axs[row,col].plot(t, x+n)
+            axs[row,col].plot(t, filtered)
+            #axs[row,col].set_title()
+            #axs[row,col].set_xticks(np.arange(-0.08, 0.081, 0.04))
+
+    # figure formatting
+    fig.supxlabel("Time $t$, (sec)")
+    fig.supylabel("relative value")
+    #fig.suptitle("Gabor Functions", fontsize=18)
+    #plt.subplots_adjust(hspace=0.4, wspace=0.3)
+    plt.show()
