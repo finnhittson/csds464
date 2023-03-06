@@ -44,9 +44,9 @@ def plot_movingavg(rand, avg=None, filtered=None, t=None, shift:float=None, titl
         t = t + shift*np.ones(len(t))
     plt.plot(t, rand, '#1f77b4', linewidth=0.5, label="Random process")
     plt.legend()
-    plt.xlabel(f"time, (sec)")
-    plt.ylabel("relative value")
-    plt.title(title)
+    plt.xlabel(f"time, ({tunits})", fontsize=16)
+    plt.ylabel("relative value", fontsize=16)
+    plt.title(title, fontsize=18)
     plt.show()
 
 # 2. IIR Filters
@@ -89,7 +89,7 @@ def plot_filter_grid(
                 axs[row,col].set_xticks([])
 
     # figure formatting
-    fig.supxlabel("Time $t$, (sec)", fontsize=16)
+    fig.supxlabel("relative time", fontsize=16)
     fig.supylabel("relative value", fontsize=16)
     #fig.suptitle("Gabor Functions", fontsize=18)
     #plt.subplots_adjust(hspace=0.4, wspace=0.3)
@@ -105,23 +105,66 @@ def freqpower(g, a, b, t:float=0.0, fs:int=2000, tau:float=0.0, T:float=0.1, s:f
     return freqs, p
 
 # 3. The impulse response function
-def impulse(x, fs:int=2000, tscale:float=1.0, f:int=100):
+def impulse(x, step:int=1):
     y = []
     t = []
     idx = 0
     while idx < len(x):
-        t.append(idx/len(x)/fs)
+        t.append(idx)
         y.append(0)
         for k in range(len(x)):
             y[-1] += x[k]*a3a.d(t[-1]-k)
-        idx += f/fs*tscale
-    return t, y
+        idx += 1*step
+    return np.array(t), y
 
-def plot_impulse(t, y, t0:list=None, x0:list=None, rand:list=None):
-    if x0 is not None and t0 is not None:
-        plt.plot(t0, x0, '#4DB399', linewidth=5, label="filtered", zorder=10)
+def plot_impulse(t, y:list=None, t0:list=None, x0:list=None, rand:list=None, shift:float=None, title:str="Impulse function", label:str="filtered"):
     if rand is not None:
         plt.plot(t0, rand, label="noise", linewidth=1)
-    plt.plot(t, y, 'r', label='impulse', zorder=10)
+    if shift is not None:
+        t = t + shift*np.ones(len(t))
+        t0 = t0 + shift*np.ones(len(t0))
+    if x0 is not None and t0 is not None:
+        plt.plot(t0, x0, '#4DB399', linewidth=5, label=label, zorder=10)
+    if y is not None:
+        for i in range(len(y)):
+            plt.plot([t[i], t[i]], [0, y[i]], 'r', label='impulse' if i == 0 else "", zorder=10)
+            plt.scatter(t[i], y[i], c='r', s=5, zorder=10)
+    plt.xlabel("time, (sec)", fontsize=16)
+    plt.ylabel("relative value", fontsize=16)
+    plt.title(title, fontsize=18)
+    plt.legend()
+    plt.show()
+
+# 4. Filtering with convolution
+def convolve(x, h, h0:int=1):
+    y = []
+    if h0 == 1: # causal filter: x[k<=n]
+        for n in range(0, len(x)):
+            y.append(0)
+            for k in range(len(h)):
+                if n-k >= 0:
+                    y[-1] += x[n-k]*h[-1-k]
+
+    elif h0 == 0: # non causal filter: x[k>n]
+        for n in range(0, len(x)):
+            y.append(0)
+            for k in range(len(h)):
+                if n-k >= 0:
+                    y[-1] += x[n-k-len(h)//2]*h[-1-k]
+    return y
+
+def plot_convolution(t, y:list=None, t0:list=None, x0:list=None, rand:list=None, shift:float=None, title:str="Impulse function", label1:str="filtered", label2="convolution"):
+    if rand is not None:
+        plt.plot(t0, rand, label="noise", linewidth=1)
+    if shift is not None:
+        t = t + shift*np.ones(len(t))
+        t0 = t0 + shift*np.ones(len(t0))
+    if x0 is not None and t0 is not None:
+        plt.plot(t0, x0, '#4DB399', linewidth=5, label=label1, zorder=10)
+    if y is not None:
+        plt.plot(t, y, 'r', label=label2, zorder=10)
+    plt.xlabel("time, (sec)", fontsize=16)
+    plt.ylabel("relative value", fontsize=16)
+    plt.title(title, fontsize=18)
     plt.legend()
     plt.show()
