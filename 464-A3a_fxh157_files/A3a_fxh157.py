@@ -1,6 +1,7 @@
 import math
 import numpy as np
 import matplotlib.pyplot as plt
+import random
 
 import sys
 sys.path.append('../464-A1b_fxh157_files/')
@@ -87,9 +88,12 @@ def snr(Ps, Pn):
     return Ps/Pn
 
 # 3b. Noisy signals
-def noisysignal(t, g, fs, tau, T, s, tscale:float=0.001, **kwargs):
-    t, signal = gensignal(t=t, g=g, fs=fs, tau=tau, T=T, tscale=tscale, **kwargs)
+def noisysignal(t, g, fs, tau, T, s, ntype:str="gaussian", tscale:float=0.001, **kwargs):
+    t, signal = gensignal(t=t, g=g, fs=fs, tau=tau, T=T, tscale=tscale, **kwargs)    
     noise = np.random.normal(loc=0, scale=s, size=len(signal))
+    if ntype.lower() == "uniform":
+        print("uniform")
+        noise = np.array([random.uniform(-1, 1) for _ in range(len(signal))])
     return t, signal, noise
 
 def plot_noisysignal(t, y, title, tunits):

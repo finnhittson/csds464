@@ -1,4 +1,5 @@
 import numpy as np
+import random
 import matplotlib.pyplot as plt
 
 import sys
@@ -19,12 +20,18 @@ def movingavg(x, l:float=0.5):
         y.append(running_sum)
     return y
 
-def randprocess(N, s:float=1.0):
+def randprocess(N, s:float=1.0, ntype:str="gaussian"):
     x = []
-    for i in range(N):
-        if i-1 >= 0:
-            x.append(np.random.normal(loc=x[i-1], scale=s))
-        else: x.append(np.random.normal(loc=0, scale=s))
+    if ntype.lower() == "gaussian":
+        for i in range(N):
+            if i-1 >= 0:
+                x.append(np.random.normal(loc=x[i-1], scale=s))
+            else: x.append(np.random.normal(loc=0, scale=s))
+    if ntype.lower() == "uniform":
+        for i in range(N):
+            if i-1 >= 0:
+                x.append(random.uniform(-1, 1))
+            else: x.append(random.uniform(-1, 1))
     return x
 
 def plot_movingavg(rand, avg=None, filtered=None, t=None, shift:float=None, title:str="Random Process w/ Moving Average", tunits:str="sec"):
@@ -36,6 +43,7 @@ def plot_movingavg(rand, avg=None, filtered=None, t=None, shift:float=None, titl
         plt.plot(t, filtered, '#4DB399', linewidth=2, label="Filtered")
     if shift is not None:
         t = t + shift*np.ones(len(t))
+        print("shifted")
     plt.plot(t, rand, '#1f77b4', linewidth=0.5, label="Random Process")
     plt.legend()
     plt.xlabel(f"time, (sec)")
