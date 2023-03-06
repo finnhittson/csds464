@@ -7,7 +7,6 @@ sys.path.append('../464-A3a_fxh157_files/')
 import A3a_fxh157 as a3a
 
 # 1. Filtering
-## 1b. Implementation
 def movingavg(x, l:float=0.5):
     if l > 1:
         print("lambda needs to be between 0 and 1.")
@@ -34,17 +33,16 @@ def randprocess(N, s:float=1.0, ntype:str="gaussian"):
             else: x.append(random.uniform(-1, 1))
     return x
 
-def plot_movingavg(rand, avg=None, filtered=None, t=None, shift:float=None, title:str="Random Process w/ Moving Average", tunits:str="sec"):
+def plot_movingavg(rand, avg=None, filtered=None, t=None, shift:float=None, title:str="Random Process w/ Moving Average", tunits:str="sec", label:str="Filtered"):
     if t is None:
         t = list(range(len(rand)))
     if avg is not None:
-        plt.plot(t, avg, 'r', linewidth=2, label="Moving Average")
+        plt.plot(t, avg, 'r', linewidth=2, label="Moving avg")
     if filtered is not None:
-        plt.plot(t, filtered, '#4DB399', linewidth=2, label="Filtered")
+        plt.plot(t, filtered, '#4DB399', linewidth=2, label=label)
     if shift is not None:
         t = t + shift*np.ones(len(t))
-        print("shifted")
-    plt.plot(t, rand, '#1f77b4', linewidth=0.5, label="Random Process")
+    plt.plot(t, rand, '#1f77b4', linewidth=0.5, label="Random process")
     plt.legend()
     plt.xlabel(f"time, (sec)")
     plt.ylabel("relative value")
@@ -52,7 +50,6 @@ def plot_movingavg(rand, avg=None, filtered=None, t=None, shift:float=None, titl
     plt.show()
 
 # 2. IIR Filters
-## 2a. Implementation
 def filterIIR(x, a:list=None, b:list=None):
     y = []
     for n in range(len(x)):
@@ -61,7 +58,7 @@ def filterIIR(x, a:list=None, b:list=None):
             if n-k >= 0:
                 y[-1] += b[k] * x[n-k]
         for k in range(len(a)):
-            if n-k-1 >= 0:
+            if n-k >= 1:
                 y[-1] -= a[k] * y[n-k-1]
     return y
 
@@ -75,19 +72,25 @@ def plot_filter_grid(
         print("nope!")
         return
     #t=0, g=a1b.sinewave, fs=2000, tau=0, T=0.1, s=0.1, tscale=1, f=100
-    fig, axs = plt.subplots(rows, cols)
+    fig, axs = plt.subplots(rows, cols, figsize=(7, 7))
     for row in range(rows):
         for col in range(cols):
             t, x, n = a3a.noisysignal(t=0, g=g, fs=fs, tau=tau, T=T, s=s[col], tscale=tscale, f=f[row])
             filtered = filterIIR(x=x+n, a=a, b=b)
             axs[row,col].plot(t, x+n)
             axs[row,col].plot(t, filtered)
-            #axs[row,col].set_title()
-            #axs[row,col].set_xticks(np.arange(-0.08, 0.081, 0.04))
+            axs[row,col].set_ylim([-2,2])
+            axs[row,col].set_yticks([-2,0,2])
+            axs[row,col].set_xticks([0,0.05,0.1])
+            axs[row,col].set_title(f"${f[row]}Hz$, $\sigma={s[col]}$")
+            if col != 0:
+                axs[row,col].set_yticks([])
+            if row != 3:
+                axs[row,col].set_xticks([])
 
     # figure formatting
-    fig.supxlabel("Time $t$, (sec)")
-    fig.supylabel("relative value")
+    fig.supxlabel("Time $t$, (sec)", fontsize=16)
+    fig.supylabel("relative value", fontsize=16)
     #fig.suptitle("Gabor Functions", fontsize=18)
     #plt.subplots_adjust(hspace=0.4, wspace=0.3)
     plt.show()

@@ -92,7 +92,6 @@ def noisysignal(t, g, fs, tau, T, s, ntype:str="gaussian", tscale:float=0.001, *
     t, signal = gensignal(t=t, g=g, fs=fs, tau=tau, T=T, tscale=tscale, **kwargs)    
     noise = np.random.normal(loc=0, scale=s, size=len(signal))
     if ntype.lower() == "uniform":
-        print("uniform")
         noise = np.array([random.uniform(-1, 1) for _ in range(len(signal))])
     return t, signal, noise
 
