@@ -36,6 +36,8 @@ def plot_sampled_function(g, fs:int=1, tlim:tuple=None, tscale:float=1.0, tunits
 # 2. Signals
 ## 2a. Delta and step functions
 def d(t, fs:int=1):
+    if isinstance(t, int) or isinstance(t, float):
+        return 1 if t == 0 else 0
     return np.array([1 if round(i, 3) == 0 else 0 for i in t])
     
 def u(t):

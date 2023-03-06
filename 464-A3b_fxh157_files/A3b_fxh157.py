@@ -94,3 +94,34 @@ def plot_filter_grid(
     #fig.suptitle("Gabor Functions", fontsize=18)
     #plt.subplots_adjust(hspace=0.4, wspace=0.3)
     plt.show()
+
+def freqpower(g, a, b, t:float=0.0, fs:int=2000, tau:float=0.0, T:float=0.1, s:float=0.1, tscale:float=1.0):
+    p = []
+    freqs = np.arange(0, fs/2, 1)
+    for f in freqs:
+        t, x, n = a3a.noisysignal(t=0, g=g, fs=fs, tau=0, T=0.1, s=0.1, tscale=1, f=f)
+        filtered = filterIIR(x=x+n, a=a, b=b)
+        p.append(a3a.power(filtered))
+    return freqs, p
+
+# 3. The impulse response function
+def impulse(x, fs:int=2000, tscale:float=1.0, f:int=100):
+    y = []
+    t = []
+    idx = 0
+    while idx < len(x):
+        t.append(idx/len(x)/fs)
+        y.append(0)
+        for k in range(len(x)):
+            y[-1] += x[k]*a3a.d(t[-1]-k)
+        idx += f/fs*tscale
+    return t, y
+
+def plot_impulse(t, y, t0:list=None, x0:list=None, rand:list=None):
+    if x0 is not None and t0 is not None:
+        plt.plot(t0, x0, '#4DB399', linewidth=5, label="filtered", zorder=10)
+    if rand is not None:
+        plt.plot(t0, rand, label="noise", linewidth=1)
+    plt.plot(t, y, 'r', label='impulse', zorder=10)
+    plt.legend()
+    plt.show()
