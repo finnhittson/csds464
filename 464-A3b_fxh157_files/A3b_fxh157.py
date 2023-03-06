@@ -143,14 +143,14 @@ def convolve(x, h, h0:int=1):
             y.append(0)
             for k in range(len(h)):
                 if n-k >= 0:
-                    y[-1] += x[n-k]*h[-1-k]
+                    y[-1] += x[n-k]*h[-1-k]/len(h)
 
     elif h0 == 0: # non causal filter: x[k>n]
         for n in range(0, len(x)):
             y.append(0)
             for k in range(len(h)):
                 if n-k >= 0:
-                    y[-1] += x[n-k-len(h)//2]*h[-1-k]
+                    y[-1] += x[n-k-len(h)]*h[-1-k]/len(h)
     return y
 
 def plot_convolution(t, y:list=None, t0:list=None, x0:list=None, rand:list=None, shift:float=None, title:str="Impulse function", label1:str="filtered", label2="convolution"):
