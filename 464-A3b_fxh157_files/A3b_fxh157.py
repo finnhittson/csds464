@@ -36,13 +36,13 @@ def randprocess(N, s:float=1.0, ntype:str="gaussian"):
 def plot_movingavg(rand, avg=None, filtered=None, t=None, shift:float=None, title:str="Random Process w/ Moving Average", tunits:str="sec", label:str="Filtered"):
     if t is None:
         t = list(range(len(rand)))
+    plt.plot(t, rand, '#1f77b4', linewidth=0.5, label="Random process")
+    if shift is not None:
+        t = t + shift*np.ones(len(t))
     if avg is not None:
         plt.plot(t, avg, 'r', linewidth=2, label="Moving avg")
     if filtered is not None:
-        plt.plot(t, filtered, '#4DB399', linewidth=2, label=label)
-    if shift is not None:
-        t = t + shift*np.ones(len(t))
-    plt.plot(t, rand, '#1f77b4', linewidth=0.5, label="Random process")
+        plt.plot(t, filtered, 'r' if avg is None else '#4DB399', linewidth=2, label=label)
     plt.legend()
     plt.xlabel(f"time, ({tunits})", fontsize=16)
     plt.ylabel("relative value", fontsize=16)
@@ -64,42 +64,35 @@ def filterIIR(x, a:list=None, b:list=None):
 
 def plot_filter_grid(
 	g, a:list=None, b:list=None,
-	rows:int=4, cols:int=4, fs:int=2000, 
-	tau:float=0, T:float=0.1, tscale:float=1.0, 
-	s:list=None, f:list=None
+	rows:int=4, cols:int=4, t0:float=0.0, tn:float=0.1,
+    fs:int=2000, tau:float=0, T:float=0.1, 
+    tscale:float=1.0, s:list=None, f:list=None
 	):
     if cols != len(s) or rows != len(f):
         print("nope!")
         return
-    #t=0, g=a1b.sinewave, fs=2000, tau=0, T=0.1, s=0.1, tscale=1, f=100
     fig, axs = plt.subplots(rows, cols, figsize=(7, 7))
+    fig.tight_layout(pad=0.1)
     for row in range(rows):
         for col in range(cols):
-            t, x, n = a3a.noisysignal(t=0, g=g, fs=fs, tau=tau, T=T, s=s[col], tscale=tscale, f=f[row])
+            t, x, n = a3a.noisysignal(t0=t0, tn=tn, g=g, fs=fs, tau=tau, T=T, s=s[row], tscale=tscale, f=f[col])
             filtered = filterIIR(x=x+n, a=a, b=b)
             axs[row,col].plot(t, x+n)
             axs[row,col].plot(t, filtered)
             axs[row,col].set_ylim([-2,2])
             axs[row,col].set_yticks([-2,0,2])
             axs[row,col].set_xticks([0,0.05,0.1])
-            axs[row,col].set_title(f"${f[row]}Hz$, $\sigma={s[col]}$")
-            if col != 0:
-                axs[row,col].set_yticks([])
-            if row != 3:
-                axs[row,col].set_xticks([])
-
-    # figure formatting
-    fig.supxlabel("relative time", fontsize=16)
-    fig.supylabel("relative value", fontsize=16)
-    #fig.suptitle("Gabor Functions", fontsize=18)
-    #plt.subplots_adjust(hspace=0.4, wspace=0.3)
+            if col == 0:
+                axs[row,col].set_ylabel(f"$\sigma={s[row]}$")
+            if row == 3:
+                axs[row,col].set_xlabel(f"$f={f[col]}Hz$")
     plt.show()
 
-def freqpower(g, a, b, t:float=0.0, fs:int=2000, tau:float=0.0, T:float=0.1, s:float=0.1, tscale:float=1.0):
+def freqpower(g, a, b, t0:float=0.0, tn:float=1.0, fs:int=2000, tau:float=0.0, T:float=0.1, s:float=0.1, tscale:float=1.0):
     p = []
     freqs = np.arange(0, fs/2, 1)
     for f in freqs:
-        t, x, n = a3a.noisysignal(t=0, g=g, fs=fs, tau=0, T=0.1, s=0.1, tscale=1, f=f)
+        t, x, n = a3a.noisysignal(t0=t0, tn=tn, g=g, fs=fs, tau=0, T=0.1, s=0.1, tscale=1, f=f)
         filtered = filterIIR(x=x+n, a=a, b=b)
         p.append(a3a.power(filtered))
     return freqs, p
@@ -117,7 +110,7 @@ def impulse(x, step:int=1):
         idx += 1*step
     return np.array(t), y
 
-def plot_impulse(t, y:list=None, t0:list=None, x0:list=None, rand:list=None, shift:float=None, title:str="Impulse function", label:str="filtered"):
+def plot_impulse(t, y:list=None, t0:list=None, x0:list=None, rand:list=None, shift:float=None, title:str="Impulse function", tunits:str="sec", label:str="filtered"):
     if rand is not None:
         plt.plot(t0, rand, label="noise", linewidth=1)
     if shift is not None:
@@ -129,31 +122,24 @@ def plot_impulse(t, y:list=None, t0:list=None, x0:list=None, rand:list=None, shi
         for i in range(len(y)):
             plt.plot([t[i], t[i]], [0, y[i]], 'r', label='impulse' if i == 0 else "", zorder=10)
             plt.scatter(t[i], y[i], c='r', s=5, zorder=10)
-    plt.xlabel("time, (sec)", fontsize=16)
+    plt.xlabel(f"time, ({tunits})", fontsize=16)
     plt.ylabel("relative value", fontsize=16)
     plt.title(title, fontsize=18)
     plt.legend()
     plt.show()
 
 # 4. Filtering with convolution
-def convolve(x, h, h0:int=1):
+def convolve(x, h, h0:int=0):
     y = []
-    if h0 == 1: # causal filter: x[k<=n]
-        for n in range(0, len(x)):
-            y.append(0)
-            for k in range(len(h)):
-                if n-k >= 0:
-                    y[-1] += x[n-k]*h[-1-k]/len(h)
-
-    elif h0 == 0: # non causal filter: x[k>n]
-        for n in range(0, len(x)):
-            y.append(0)
-            for k in range(len(h)):
-                if n-k >= 0:
-                    y[-1] += x[n-k-len(h)]*h[-1-k]/len(h)
+    for n in range(0, len(x)):
+        y.append(0)
+        for k in range(len(h)):
+            k = n+h0-k
+            if len(x) > k >= 0:
+                y[-1] += x[k]*h[n-k+h0]
     return y
 
-def plot_convolution(t, y:list=None, t0:list=None, x0:list=None, rand:list=None, shift:float=None, title:str="Impulse function", label1:str="filtered", label2="convolution"):
+def plot_convolution(t, y:list=None, t0:list=None, x0:list=None, rand:list=None, shift:float=None, title:str="Impulse function", tunits="sec", label1:str="filtered", label2="convolution"):
     if rand is not None:
         plt.plot(t0, rand, label="noise", linewidth=1)
     if shift is not None:
@@ -163,8 +149,8 @@ def plot_convolution(t, y:list=None, t0:list=None, x0:list=None, rand:list=None,
         plt.plot(t0, x0, '#4DB399', linewidth=5, label=label1, zorder=10)
     if y is not None:
         plt.plot(t, y, 'r', label=label2, zorder=10)
-    plt.xlabel("time, (sec)", fontsize=16)
+    plt.xlabel(f"time, ({tunits})", fontsize=16)
     plt.ylabel("relative value", fontsize=16)
     plt.title(title, fontsize=18)
-    plt.legend()
+    plt.legend().set_zorder(10)
     plt.show()

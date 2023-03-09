@@ -85,11 +85,19 @@ def gensignal(t0, tn, g, fs:int=1, tau:float=0.0, T:float=0.0, tscale:float=1, *
     elif g == d:
         t = np.arange(t0, tn, 1/fs)
         y = [g(i-tau) for i in t]
-    else:
-        t = np.arange(0, T, 1/fs)
+    elif g == a1b.gabore or g == a1b.gaboro:
+        t = np.arange(-T/2, T/2, 1/fs)
         y = g(t, **kwargs)
         if len(t) > 0:
-            tb = np.arange(t0, tau, 1/fs)
+            tb = np.arange(t0, -T/2+tau, 1/fs)
+            ta = np.arange(T/2+tau, tn, 1/fs)
+            t = np.concatenate((tb, t+tau, ta))
+            y = np.concatenate((np.zeros(len(tb)), y, np.zeros(len(ta))))
+    else:
+        t = np.arange(t0, T, 1/fs)
+        y = g(t, **kwargs)
+        if len(t) > 0:
+            tb = np.arange(t0+1/fs, tau, 1/fs)
             ta = np.arange(t[-1]+tau+1/fs, tn, 1/fs)
             t = np.concatenate((tb, t+tau, ta))
             y = np.concatenate((np.zeros(len(tb)), y, np.zeros(len(ta))))
@@ -154,14 +162,3 @@ def extent(y, th:float=0.01):
         elif abs(y[i]) > th:
             last = i
     return first, last
-
-def extend(t, y, n, fs, T, size, s):
-    noise_before = np.random.normal(loc=0, scale=s, size=size)
-    noise_after = np.random.normal(loc=0, scale=s, size=size)
-    noise = np.concatenate((noise_before, n, noise_after))
-
-    zeros = np.zeros(size)
-    signal = np.concatenate((zeros, y, zeros))
-    time = np.linspace(0, T + 2*T*size/len(y), len(signal))
-
-    return time, signal, noise
