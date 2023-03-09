@@ -21,59 +21,85 @@ def plot_sampled_function(g, fs:int=1, tlim:tuple=None, tscale:float=1.0, tunits
     sample_times = np.arange(tlim[0], tlim[1], 1/fs)
     if g is a1b.sinewave:
         sample_times = np.arange(tlim[0]*tscale, tlim[1]*tscale, 1/fs)
-    #'''
+    
     for st in sample_times:
         y = g(t=st, **kwargs)/norm
         plt.plot([st, st], [0, y], 'r')
         plt.scatter(st, y, c='r', s=15, zorder=10)
-    #'''
+    
     plt.xlim([t[0], t[-1]])
+    if tunits == "msec":
+        ticks = plt.xticks()[0]
+        plt.xticks(ticks=ticks, labels=ticks*1000)
     plt.xlabel(f"time $t$, ({tunits})", fontsize=16)
     plt.ylabel("amplitude", fontsize=16)
     plt.title(title, fontsize=18)
+    if 'f' in kwargs:
+        plt.title(title + f", ${kwargs['f']}Hz$", fontsize=18)
     plt.show()
 
 # 2. Signals
 ## 2a. Delta and step functions
-def d(t, fs:int=1):
+def d(t):
     if isinstance(t, int) or isinstance(t, float):
         return 1 if t == 0 else 0
     return np.array([1 if round(i, 3) == 0 else 0 for i in t])
     
 def u(t):
-    return np.array([1 if i >= 0 else 0 for i in t])
+    return 1 if t >= 0 else 0
 
-def plot_delta_step(t, fs, g, plot_type:str="line"):
-    t = np.arange(-t, t+1, 1/fs)
-    if g == d:
-        y = g(t, fs)
-    else:
-        y = g(t)
-    if plot_type == "stem":
+def plot_delta_step(t0, tn, g, fs:int=1, tau:float=0.0, T:float=0.0, title:str="set me", tunits:str="sec", plot_type:str="line"):
+    t = np.arange(t0, tau+T if g!=d else tn, 1/fs)
+    y = [g(i-tau) for i in t]
+    if tn > tau+T:
+        ta = np.arange(t[-1]+1/fs, tn, 1/fs)
+        t = np.concatenate((t, ta))
+        y = np.concatenate((y, np.zeros(len(ta))))
+    if plot_type.lower() == "stem":
         for i in range(len(y)):
             plt.plot([t[i], t[i]], [0, y[i]], '#1f77b4')
             plt.scatter(t[i], y[i], c='#1f77b4', s=15, zorder=10)
-    else:
+    elif plot_type.lower() == "line":
         plt.plot(t,y)
+    else:
+        print("plot type not supported.")
+        return
+    plt.xlabel(f"time, ({tunits})", fontsize=16)
+    plt.title(f"{title}, $\\tau={tau}\\ {tunits}$, $T={T}\\ {tunits}$", fontsize=18)
     plt.ylim([0,1.5])
     plt.yticks([1])
     plt.show()
 
 ## 2b. gensignal
-def gensignal(t, g, fs:int=1, tau:float=1.0, T:float=1.0, tscale:float=0.001, **kwargs):
-    if g == d:
-        t = np.arange(t, t+T+tau, 1/(tscale*fs))
+def gensignal(t0, tn, g, fs:int=1, tau:float=0.0, T:float=0.0, tscale:float=1, **kwargs):
+    fs = fs*tscale
+    t = []
+    y = []
+    if g == u:
+        t = np.arange(t0, tau+T, 1/fs)
+        y = [g(i-tau) for i in t]
+        if tn > tau+T:
+            ta = np.arange(t[-1]+1/fs, tn, 1/fs)
+            t = np.concatenate((t, ta))
+            y = np.concatenate((y, np.zeros(len(ta))))
+    elif g == d:
+        t = np.arange(t0, tn, 1/fs)
+        y = [g(i-tau) for i in t]
+    else:
+        t = np.arange(0, T, 1/fs)
         y = g(t, **kwargs)
-        return t + np.ones(len(t))*tau, y
-    t = np.arange(t+tau, T+tau, 1/(tscale*fs))
-    y = g(t, **kwargs)
+        if len(t) > 0:
+            tb = np.arange(t0, tau, 1/fs)
+            ta = np.arange(t[-1]+tau+1/fs, tn, 1/fs)
+            t = np.concatenate((tb, t+tau, ta))
+            y = np.concatenate((np.zeros(len(tb)), y, np.zeros(len(ta))))
     return t, y
 
-def plot_stem(t, y, title, time_units):
+def plot_stem(t, y, title:str="set me", tunits:str="sec"):
     for i in range(len(y)):
         plt.plot([t[i], t[i]], [0, y[i]], '#1f77b4')
         plt.scatter(t[i], y[i], c='#1f77b4', s=15)
-    plt.xlabel(f"time $t$, ({time_units})", fontsize=16)
+    plt.xlabel(f"time $t$, ({tunits})", fontsize=16)
     plt.ylabel("amplitude", fontsize=16)
     plt.title(title, fontsize=18)
     plt.show()
@@ -90,18 +116,26 @@ def snr(Ps, Pn):
     return Ps/Pn
 
 # 3b. Noisy signals
-def noisysignal(t, g, fs, tau, T, s, ntype:str="gaussian", tscale:float=0.001, **kwargs):
-    t, signal = gensignal(t=t, g=g, fs=fs, tau=tau, T=T, tscale=tscale, **kwargs)    
-    noise = np.random.normal(loc=0, scale=s, size=len(signal))
+def noisysignal(t0, tn, g, fs:int=1, tau:float=0.0, T:float=0.0, s:float=0.0, tscale:float=1, ntype:str="gaussian", **kwargs):
+    t, y = gensignal(t0=t0, tn=tn, g=g, fs=fs, tau=tau, T=T, tscale=tscale, **kwargs)
+    n = np.random.normal(loc=0, scale=s, size=len(y))
     if ntype.lower() == "uniform":
-        noise = np.array([random.uniform(-1, 1) for _ in range(len(signal))])
-    return t, signal, noise
+        n = np.random.uniform(-1, 1, size=len(y))
+    return t, y, n
 
-def plot_noisysignal(t, y, title, tunits):
-    plt.plot(t, y, linewidth=0.5)
+def plot_noisysignal(t, y, title:str="set me", tunits:str="sec", plot_type:str="line"):
+    if plot_type.lower() == "line":
+        plt.plot(t, y, linewidth=0.5)
+    elif plot_type.lower() == "stem":
+        for i in range(len(y)):
+            plt.plot([t[i], t[i]], [0, y[i]], '#1f77b4')
+            plt.scatter(t[i], y[i], c='#1f77b4', s=5)
+    else:
+        print("plot type not supported")
+        return
     plt.xlabel(f"time $t$, ({tunits})", fontsize=16)
     plt.ylabel("amplitude", fontsize=16)
-    plt.title(title, fontsize=16)
+    plt.title(title, fontsize=18)
     plt.show()
 
 # 3c. Noise level specified by SNR
