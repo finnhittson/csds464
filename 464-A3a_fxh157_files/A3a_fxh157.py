@@ -48,7 +48,8 @@ def d(t):
 def u(t):
     return 1 if t >= 0 else 0
 
-def plot_delta_step(t0, tn, g, fs:int=1, tau:float=0.0, T:float=0.0, title:str="set me", tunits:str="sec", plot_type:str="line"):
+def plot_delta_step(t0, tn, g, fs:int=1, tau:float=0.0, T:float=0.0, title:str="set me", tscale:float=1.0, tunits:str="sec", plot_type:str="line"):
+    fs *= tscale
     t = np.arange(t0, tau+T if g!=d else tn, 1/fs)
     y = [g(i-tau) for i in t]
     if tn > tau+T:
