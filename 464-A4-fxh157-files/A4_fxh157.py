@@ -18,8 +18,10 @@ def cosine(t, f:list=[1], alist:list=[1], phase_list:list=[0]):
         val += alist[idx]*math.cos(f[idx]*t+phase_list[idx])
     return val
 
-def plot_harmonics(t, g, f, alist:list=[1], phase_list:list=[0], title:str="set me"):
-    y = [g(t=i, f=f, alist=alist, phase_list=phase_list) for i in t]
+def plot_harmonics(t, g, f, n=None, alist:list=[1], phase_list:list=[0], title:str="set me"):
+    y = np.array([g(t=i, f=f, alist=alist, phase_list=phase_list) for i in t])
+    if n is not None and len(y) == len(n):
+        y += n
     fig, axs = plt.subplots(1,2, figsize=(10,2))
     fig.subplots_adjust(wspace=0.3)
     if isinstance(f, int) or isinstance(f, float):
