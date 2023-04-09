@@ -1,9 +1,11 @@
 import matplotlib.pyplot as plt
+from scipy.io import wavfile
 import numpy as np
 import math
 
-def ping():
-    print("pong")
+def read_wav(filepath):
+    sr, data = wavfile.read(filepath)
+    return sr, data
 
 # (1) Spectral Structure
 def harmonic(t, f:int=1, alist:list=[1], phase_list:list=[0]):
@@ -38,3 +40,41 @@ def plot_harmonics(t, g, f, n=None, alist:list=[1], phase_list:list=[0], title:s
     axs[1].set_ylabel("amplitude")
 
     plt.show()
+
+# (4) Implementation and Application
+def convolve(x, y):
+    out = np.zeros(len(x))
+    for n in range(len(x)):
+        for k in range(len(y)):
+            if len(y) > n+len(y)-k >= 0:
+                out[n] += y[n+len(y)-k]*x[k]
+
+    out2 = np.zeros(len(x))
+    for n in range(len(x)):
+        for k in range(len(y)):
+            if  n-k >= 0:
+                out2[n] += y[n-k]*x[k]
+    return np.concatenate((out2, out))
+
+def autocorr(x, normalize:bool=True):
+    pxx = np.zeros(len(x)*2-1)
+    norm_sqr = np.linalg.norm(x)**2
+    for n in range(-len(x)+1, len(x)):
+        for k in range(len(x)):
+            if len(x) > k-n >= 0:
+                pxx[n+len(x)-1] += x[k-n]*x[k]
+        if normalize:
+            pxx[n+len(x)-1] /= norm_sqr
+    return pxx
+
+def crosscorr(x, y, normalize:bool=True):
+    pxy = np.zeros(len(x))
+    norm_x = np.linalg.norm(x)
+    norm_y = np.linalg.norm(y)
+    for n in range(len(x)):
+        for k in range(len(y)):
+            if k-n >= 0:
+                pxy[n] += x[k-n]*y[k]
+        if normalize:
+            pxy[n] /= norm_x * norm_y
+    return pxy
