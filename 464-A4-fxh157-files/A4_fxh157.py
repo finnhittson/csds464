@@ -31,6 +31,7 @@ def plot_harmonics(t, g, f, n=None, alist:list=[1], phase_list:list=[0], title:s
     else:
         axs[0].stem(f, basefmt=" ")
     axs[0].set_title("frequencies")
+    axs[0].set_xlabel("count")
     axs[0].set_ylabel("frequency, $Hz$")
     axs[0].set_xticks(ticks=list(range(0, len(alist))), labels=list(range(1, len(alist)+1)))
 
