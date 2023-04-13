@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 from scipy.io import wavfile
+import scipy
 import numpy as np
 import math
 
@@ -35,7 +36,7 @@ def plot_harmonics(t, g, f, n=None, alist:list=[1], phase_list:list=[0], title:s
     fig, axs = plt.subplots(1,2, figsize=(10,2))
     fig.subplots_adjust(wspace=0.3)
     if isinstance(f, int) or isinstance(f, float):
-        axs[0].stem([f*(i+1) for i in range(len(alist))], basefmt=" ")
+        axs[0].stem([f*(i+1) for i in range(len(alist))], basefmt="")
     else:
         axs[0].stem(f, basefmt=" ")
     axs[0].set_title("frequencies")
@@ -121,3 +122,68 @@ def crosscorr(x, y, normalize:bool=True):
         if normalize:
             pxy[n+len(x)-1] /= norm_x * norm_y
     return pxy
+
+def pitch_estimate(data, N:int=1000, plot_data:bool=True, plot_autoc:bool=True):
+    data_s = data[:N]
+    x = [i/44100 for i in range(-len(data_s)+1, len(data_s))]
+
+    auto_c = autocorr(x=data_s, normalize=True)
+
+    peaks, _ = scipy.signal.find_peaks(auto_c)
+    sorted_auto_c = np.argsort(auto_c[peaks])
+    twopeak = abs(x[peaks[sorted_auto_c[-2]]] - x[peaks[sorted_auto_c[-1]]])
+    ff = 1/twopeak
+    print(f"pitch estimate: {ff} Hz")
+    if plot_data:
+        plt.figure().set_figheight(2)
+        plt.plot(data_s)
+        plt.title("original signal")
+
+    if plot_autoc:
+        plt.figure().set_figheight(2)
+        plt.title("autocorrelation")
+        plt.plot(x, auto_c)
+
+    plt.show()
+
+    return ff
+
+def estimate_time_delay(x, y):
+    cross_corr = crosscorr(x=x, y=y, normalize=True)
+    lag = np.argmax(cross_corr) - len(x) + 1
+    print(f"time delay: {lag} lag samples")
+
+    plt.figure().set_figheight(2)
+    plt.plot(cross_corr, label="cross-correlation")
+    plt.scatter(np.argmax(cross_corr), max(cross_corr), c='r', label="max correlation", zorder=10)
+    plt.legend()
+    plt.show()
+
+    return lag
+
+# (5) Spectral Analysis
+def spectral_analysis(data, f:int=None, alist:list=None, scale:int=1, N:int=None, x:int=-2, plot_data:bool=True):
+    if N is not None:
+        data = data[:N]
+
+    fft_data = scipy.fft.rfft(data)
+    freqs = scipy.fft.rfftfreq(n=data.size, d=1/len(data)) * scale
+
+    a = abs(fft_data)/len(fft_data)
+
+    idxs = a > pow(10, x)
+    freqs = freqs[idxs]
+    a = a[idxs]
+
+    if plot_data:
+        plt.figure().set_figheight(2)
+        plt.plot(data)
+
+    if f and alist:
+        orig_freqs = [f*(i+1) for i in range(len(alist))]
+        plt.figure().set_figheight(2)
+        plt.stem(orig_freqs, alist, basefmt="")
+
+    plt.figure().set_figheight(2)
+    plt.stem(freqs, a, basefmt="")
+    plt.show()
