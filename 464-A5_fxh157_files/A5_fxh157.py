@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-# (1)
+# 1. Basis functions of the discrete Fourier transform
 def plot_circle(k, N):
     ns = np.array(list(range(0, N+1)))
     x = [np.cos(2*np.pi*k/N*n) for n in ns]
@@ -33,11 +33,11 @@ def plotw(k, N, show_cont:bool=False):
 
     plt.show()
 
-# (2)
+# 2. Fourier analysis in matrix-vector form
 def fourier_matrix(N):
     return np.matrix([[w(n=n, k=k, N=N) for n in range(N)] for k in range(N)])
 
-# (3)
+# 3. Transforms in 2D
 def eatdogshit(y, k, l, M, N):
     out = 0
     for m in range(M):
